@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ultimate LARP Control Panel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-br from-cyan-500 via-cyan-400 to-white text-gray-900 font-sans">
+
+<!-- ===== LARP LOGO TOP RIGHT ===== -->
+<img src="https://i.imgur.com/GOk8CHv.png"
+     class="fixed top-4 right-4 w-20 h-20 rounded-xl shadow-lg border border-white/50 z-50"
+     alt="LARP Logo" />
+
+<!-- ===== PLAYER PANEL ===== -->
+<div class="fixed bottom-4 right-4 bg-white/90 backdrop-blur p-4 rounded-xl shadow-xl border border-cyan-200 w-52 z-50">
+  <h4 class="font-bold text-cyan-700 mb-1">Server Status</h4>
+  <p id="playerCount" class="text-sm">Players: --</p>
+</div>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" class="min-h-screen flex items-center justify-center">
+  <div class="bg-white/90 backdrop-blur p-10 rounded-2xl shadow-2xl w-96 text-center border border-cyan-200">
+
+    <h1 class="text-2xl font-bold mb-2 text-cyan-700">
+      The Ultimate LARP Control Panel
+    </h1>
+
+    <img src="https://i.imgur.com/GOk8CHv.png"
+         class="mx-auto mb-6 w-20 h-20 rounded-xl shadow-md" />
+
+    <input id="passwordInput" type="password" placeholder="Enter password"
+      class="w-full p-3 rounded-lg bg-white border border-cyan-300 mb-4 outline-none focus:ring-2 focus:ring-cyan-400" />
+
+    <button onclick="login()"
+      class="w-full bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-600 hover:to-cyan-500 text-white p-3 rounded-xl font-semibold shadow-lg">
+      Access Panel
+    </button>
+
+    <p id="errorText" class="text-red-500 mt-3 hidden">Wrong password.</p>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="dashboard" class="hidden">
+  <nav class="bg-gradient-to-r from-cyan-600 to-cyan-400 p-5 text-xl font-bold text-white shadow-lg">
+    Ultimate LARP Control Panel
+  </nav>
+
+  <section class="p-8">
+
+    <!-- INFRACTION BUTTON -->
+    <button onclick="toggleInfractions()"
+      class="mb-6 bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-xl shadow-lg font-semibold">
+      View Infraction Logs
+    </button>
+
+    <!-- INFRACTION PANEL -->
+    <div id="infractionsPanel" class="hidden bg-white/90 backdrop-blur p-5 rounded-xl shadow-md border border-cyan-200">
+      <h3 class="text-xl font-bold text-cyan-700 mb-3">Infraction Logs</h3>
+
+      <!-- 🔥 REPLACE THIS WITH YOUR DISCORD CHANNEL WEBHOOK/EMBED -->
+      <iframe
+        src="YOUR_DISCORD_CHANNEL_EMBED_LINK_HERE"
+        class="w-full h-[500px] rounded-lg border"
+      ></iframe>
+    </div>
+
+  </section>
+</div>
+
+<script>
+// ===== ERLC API =====
+const ERLC_API_KEY = "fdWKTlzxNscCtrAOfHKj-ltorbrRrkLufkrZtczFpOjPugSKwUagwpjzYSRYR";
+
+// ===== PASSWORD =====
+const PASSWORD = "225";
+
+// ===== AUTO LOGIN CHECK (sessionStorage) =====
+window.onload = () => {
+  if (sessionStorage.getItem("larpLoggedIn") === "true") {
+    showDashboard();
+  }
+};
+
+// ===== LOGIN =====
+function login() {
+  const pass = document.getElementById("passwordInput").value.trim();
+
+  if (pass !== PASSWORD) {
+    document.getElementById("errorText").classList.remove("hidden");
+    return;
+  }
+
+  sessionStorage.setItem("larpLoggedIn", "true");
+  showDashboard();
+}
+
+// ===== SHOW DASHBOARD =====
+function showDashboard() {
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("dashboard").classList.remove("hidden");
+}
+
+// ===== TOGGLE INFRACTIONS =====
+function toggleInfractions() {
+  document.getElementById("infractionsPanel").classList.toggle("hidden");
+}
+
+// ===== PLAYER COUNT =====
+async function fetchPlayerCount() {
+  try {
+    const res = await fetch(
+      "https://api.policeroleplay.community/v1/server",
+      { headers: { "Server-Key": ERLC_API_KEY } }
+    );
+
+    const data = await res.json();
+
+    document.getElementById("playerCount").textContent =
+      "Players: " + (data.CurrentPlayers ?? "--");
+  } catch {
+    document.getElementById("playerCount").textContent =
+      "Players: Error";
+  }
+}
+
+// ===== AUTO REFRESH =====
+fetchPlayerCount();
+setInterval(fetchPlayerCount, 30000);
+</script>
+
+</body>
+</html>
