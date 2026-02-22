@@ -92,7 +92,7 @@
 // ===== ERLC API =====
 const ERLC_API_KEY = "fdWKTlzxNscCtrAOfHKj-ltorbrRrkLufkrZtczFpOjPugSKwUagwpjzYSRYR";
 
-// ⚠️ IMPORTANT: replace if your endpoint differs
+// Base endpoint
 const ERLC_SERVER_ENDPOINT = "https://api.policeroleplay.community/v1/server";
 
 // ===== PASSWORD =====
@@ -132,7 +132,7 @@ function toggleSessionTab() {
   document.getElementById("sessionTab").classList.toggle("hidden");
 }
 
-// ===== FETCH SERVER STATS =====
+// ===== FETCH SERVER STATS (PRO VERSION) =====
 async function fetchServerStats() {
   try {
     const res = await fetch(ERLC_SERVER_ENDPOINT, {
@@ -141,13 +141,33 @@ async function fetchServerStats() {
 
     const data = await res.json();
 
-    // 🔥 LIVE PLAYERS
-    document.getElementById("playerCountBig").textContent =
-      data.CurrentPlayers ?? "--";
+    // ✅ PLAYERS
+    const players =
+      data.CurrentPlayers ??
+      data.PlayerCount ??
+      data.players ??
+      "--";
 
-    // 🔥 LIVE MOD CALLS (ERLC field)
+    document.getElementById("playerCountBig").textContent = players;
+
+    // ✅ MOD CALLS (deep detection)
+    let modCalls =
+      data.ModCalls ??
+      data.ModCallCount ??
+      data.modCalls ??
+      data.modcalls ??
+      null;
+
+    // if still null, try nested objects (ERLC sometimes nests)
+    if (modCalls === null && data.ServerStats) {
+      modCalls =
+        data.ServerStats.ModCalls ??
+        data.ServerStats.ModCallCount ??
+        null;
+    }
+
     document.getElementById("modCallsCount").textContent =
-      data.ModCalls ?? data.ModCallCount ?? "--";
+      modCalls ?? "--";
 
   } catch (err) {
     document.getElementById("playerCountBig").textContent = "Error";
