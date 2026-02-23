@@ -40,20 +40,41 @@
 <!-- ===== DASHBOARD ===== -->
 <div id="dashboard" class="hidden">
 
-  <nav class="bg-gradient-to-r from-cyan-600 to-cyan-400 p-5 text-xl font-bold text-white shadow-lg flex justify-between">
+  <!-- TOP BAR -->
+  <nav class="bg-gradient-to-r from-cyan-600 to-cyan-400 p-5 text-xl font-bold text-white shadow-lg flex justify-between items-center">
     <span>Ultimate LARP Control Panel</span>
 
-    <button onclick="toggleSessionTab()"
-      class="bg-white/20 hover:bg-white/30 px-4 py-1 rounded-lg text-sm">
-      Session Monitor
-    </button>
+    <div class="flex gap-3">
+      <button onclick="openPanel('homePanel')"
+        class="bg-white/20 hover:bg-white/30 px-4 py-1 rounded-lg text-sm">
+        Home
+      </button>
+
+      <button onclick="openPanel('sessionPanel')"
+        class="bg-white/20 hover:bg-white/30 px-4 py-1 rounded-lg text-sm">
+        Session Analytics
+      </button>
+    </div>
   </nav>
 
+  <!-- MAIN AREA -->
   <section class="p-8 max-w-5xl mx-auto">
 
-    <!-- ===== SESSION TAB ===== -->
-    <div id="sessionTab"
-         class="hidden bg-white/90 backdrop-blur p-6 rounded-xl shadow-md border border-cyan-200">
+    <!-- ===== HOME PANEL ===== -->
+    <div id="homePanel" class="control-panel">
+      <div class="bg-white/90 backdrop-blur p-10 rounded-xl border border-cyan-200 shadow-md text-center">
+        <h2 class="text-2xl font-bold text-cyan-700 mb-3">
+          Control Panel Ready
+        </h2>
+        <p class="text-gray-600">
+          Select a tool from the top right. More admin tools can be added later.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== SESSION PANEL ===== -->
+    <div id="sessionPanel"
+         class="control-panel hidden bg-white/90 backdrop-blur p-6 rounded-xl shadow-md border border-cyan-200">
 
       <h2 class="text-2xl font-bold text-cyan-700 mb-6">
         Live Session Monitor
@@ -61,7 +82,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        <!-- PLAYER COUNT CARD -->
+        <!-- PLAYER COUNT -->
         <div class="bg-cyan-50 p-6 rounded-xl border shadow-sm">
           <h3 class="text-lg font-semibold text-cyan-800 mb-2">
             Live Players
@@ -71,10 +92,10 @@
           </p>
         </div>
 
-        <!-- MOD CALLS CARD -->
+        <!-- MOD CALLS -->
         <div class="bg-cyan-50 p-6 rounded-xl border shadow-sm">
           <h3 class="text-lg font-semibold text-cyan-800 mb-2">
-            Mod Calls This Session
+            Active Mod Calls
           </h3>
           <p id="modCallsCount" class="text-3xl font-bold text-cyan-700">
             --
@@ -92,8 +113,9 @@
 // ===== ERLC API =====
 const ERLC_API_KEY = "fdWKTlzxNscCtrAOfHKj-ltorbrRrkLufkrZtczFpOjPugSKwUagwpjzYSRYR";
 
-// Base endpoint
+// endpoints
 const ERLC_SERVER_ENDPOINT = "https://api.policeroleplay.community/v1/server";
+const ERLC_STAFFCALLS_ENDPOINT = "https://api.policeroleplay.community/v1/server/staffcalls";
 
 // ===== PASSWORD =====
 const PASSWORD = "225";
@@ -105,7 +127,10 @@ window.onload = () => {
   }
 
   fetchServerStats();
+  fetchModCalls();
+
   setInterval(fetchServerStats, 15000);
+  setInterval(fetchModCalls, 8000);
 };
 
 // ===== LOGIN =====
@@ -127,12 +152,16 @@ function showDashboard() {
   document.getElementById("dashboard").classList.remove("hidden");
 }
 
-// ===== TOGGLE SESSION TAB =====
-function toggleSessionTab() {
-  document.getElementById("sessionTab").classList.toggle("hidden");
+// ===== PANEL SYSTEM =====
+function openPanel(panelId) {
+  document.querySelectorAll(".control-panel").forEach(p => {
+    p.classList.add("hidden");
+  });
+
+  document.getElementById(panelId)?.classList.remove("hidden");
 }
 
-// ===== FETCH SERVER STATS (PRO VERSION) =====
+// ===== PLAYER COUNT =====
 async function fetchServerStats() {
   try {
     const res = await fetch(ERLC_SERVER_ENDPOINT, {
@@ -141,37 +170,33 @@ async function fetchServerStats() {
 
     const data = await res.json();
 
-    // ✅ PLAYERS
     const players =
       data.CurrentPlayers ??
       data.PlayerCount ??
-      data.players ??
       "--";
 
     document.getElementById("playerCountBig").textContent = players;
 
-    // ✅ MOD CALLS (deep detection)
-    let modCalls =
-      data.ModCalls ??
-      data.ModCallCount ??
-      data.modCalls ??
-      data.modcalls ??
-      null;
-
-    // if still null, try nested objects (ERLC sometimes nests)
-    if (modCalls === null && data.ServerStats) {
-      modCalls =
-        data.ServerStats.ModCalls ??
-        data.ServerStats.ModCallCount ??
-        null;
-    }
-
-    document.getElementById("modCallsCount").textContent =
-      modCalls ?? "--";
-
-  } catch (err) {
+  } catch {
     document.getElementById("playerCountBig").textContent = "Error";
-    document.getElementById("modCallsCount").textContent = "Error";
+  }
+}
+
+// ===== REAL MOD CALL COUNT =====
+async function fetchModCalls() {
+  try {
+    const res = await fetch(ERLC_STAFFCALLS_ENDPOINT, {
+      headers: { "Server-Key": ERLC_API_KEY }
+    });
+
+    const data = await res.json();
+
+    const count = Array.isArray(data) ? data.length : 0;
+
+    document.getElementById("modCallsCount").textContent = count;
+
+  } catch {
+    document.getElementById("modCallsCount").textContent = "--";
   }
 }
 </script>
